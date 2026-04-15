@@ -16,6 +16,9 @@
         :messages="messages" 
         :loading="loading"
         :is-admin="isAdminView"
+        :total="total"
+        :current-page="currentPage"
+        :page-size="pageSize"
         @delete="handleDelete"
         @page-change="handlePageChange"
       />
@@ -40,7 +43,8 @@ export default {
       loading: false,
       isAdminView: false,
       currentPage: 1,
-      pageSize: 10
+      pageSize: 10,
+      total: 0
     }
   },
   mounted() {
@@ -57,11 +61,19 @@ export default {
             isAdmin: this.isAdminView || undefined
           }
         })
-        if (response.code === 200) {
+        if (response.code === 200 && response.data) {
           this.messages = response.data.records || []
+          this.total = response.data.total || 0
+        } else {
+          console.error('获取留言失败:', response.message)
+          this.messages = []
+          this.total = 0
         }
       } catch (error) {
         console.error('获取留言失败:', error)
+        alert('获取留言失败: ' + (error.message || '网络错误'))
+        this.messages = []
+        this.total = 0
       } finally {
         this.loading = false
       }
@@ -75,12 +87,13 @@ export default {
         const response = await api.post('/messages', data)
         if (response.code === 200) {
           alert('留言提交成功！')
+          this.currentPage = 1
           this.fetchMessages()
         } else {
-          alert('提交失败: ' + response.message)
+          alert('提交失败: ' + (response.message || '未知错误'))
         }
       } catch (error) {
-        alert('提交失败，请稍后重试')
+        alert('提交失败: ' + (error.message || '请稍后重试'))
       }
     },
     async handleDelete(id) {
@@ -93,10 +106,10 @@ export default {
           alert('删除成功')
           this.fetchMessages()
         } else {
-          alert('删除失败: ' + response.message)
+          alert('删除失败: ' + (response.message || '未知错误'))
         }
       } catch (error) {
-        alert('删除失败，请稍后重试')
+        alert('删除失败: ' + (error.message || '请稍后重试'))
       }
     },
     handlePageChange(page) {
@@ -154,6 +167,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  color: white;
 }
 
 .admin-toggle input {

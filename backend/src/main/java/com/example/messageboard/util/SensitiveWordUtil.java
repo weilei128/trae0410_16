@@ -4,26 +4,29 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 @Component
 public class SensitiveWordUtil {
     
-    @Value("${message.sensitive.words}")
+    @Value("${message.sensitive.words:}")
     private String sensitiveWordsConfig;
     
-    private Set<String> sensitiveWords;
+    private List<String> sensitiveWords = new ArrayList<>();
     private static final String REPLACE_CHAR = "*";
     
     @PostConstruct
     public void init() {
-        sensitiveWords = new HashSet<>();
         if (sensitiveWordsConfig != null && !sensitiveWordsConfig.trim().isEmpty()) {
             String[] words = sensitiveWordsConfig.split(",");
             for (String word : words) {
-                sensitiveWords.add(word.trim().toLowerCase());
+                String trimmed = word.trim();
+                if (!trimmed.isEmpty()) {
+                    sensitiveWords.add(trimmed);
+                }
             }
         }
     }
@@ -34,33 +37,47 @@ public class SensitiveWordUtil {
         }
         String lowerText = text.toLowerCase();
         for (String word : sensitiveWords) {
-            if (lowerText.contains(word)) {
+            if (lowerText.contains(word.toLowerCase())) {
                 return true;
             }
         }
         return false;
     }
     
+    private String repeatChar(char c, int count) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+    
     public String filterSensitiveWord(String text) {
         if (text == null || text.trim().isEmpty()) {
             return text;
         }
+        if (sensitiveWords.isEmpty()) {
+            return text;
+        }
+        
         String result = text;
         for (String word : sensitiveWords) {
             if (word.isEmpty()) continue;
-            String lowerText = result.toLowerCase();
-            int index = lowerText.indexOf(word.toLowerCase());
-            while (index != -1) {
-                String replacement = REPLACE_CHAR.repeat(word.length());
-                result = result.substring(0, index) + replacement + result.substring(index + word.length());
-                lowerText = result.toLowerCase();
-                index = lowerText.indexOf(word.toLowerCase(), index + replacement.length());
+            String patternStr = "(?i)" + Pattern.quote(word);
+            Pattern pattern = Pattern.compile(patternStr);
+            Matcher matcher = pattern.matcher(result);
+            StringBuffer sb = new StringBuffer();
+            while (matcher.find()) {
+                String replacement = repeatChar(REPLACE_CHAR.charAt(0), matcher.group().length());
+                matcher.appendReplacement(sb, replacement);
             }
+            matcher.appendTail(sb);
+            result = sb.toString();
         }
         return result;
     }
     
-    public Set<String> getSensitiveWords() {
-        return new HashSet<>(sensitiveWords);
+    public List<String> getSensitiveWords() {
+        return new ArrayList<>(sensitiveWords);
     }
 }

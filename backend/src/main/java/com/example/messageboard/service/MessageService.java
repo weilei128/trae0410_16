@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,9 +24,13 @@ public class MessageService {
     
     public Message addMessage(Message message) {
         List<Message> messages = jsonFileUtil.readArray(Message.class);
+        if (messages == null) {
+            messages = new ArrayList<>();
+        }
         
         Long maxId = messages.stream()
-                .mapToLong(m -> m.getId() != null ? m.getId() : 0)
+                .filter(m -> m.getId() != null)
+                .mapToLong(Message::getId)
                 .max()
                 .orElse(0L);
         
@@ -37,8 +42,11 @@ public class MessageService {
             message.setIsAdmin(false);
         }
         
-        String filteredContent = sensitiveWordUtil.filterSensitiveWord(message.getContent());
-        message.setContent(filteredContent);
+        String originalContent = message.getContent();
+        if (originalContent != null && !originalContent.trim().isEmpty()) {
+            String filteredContent = sensitiveWordUtil.filterSensitiveWord(originalContent);
+            message.setContent(filteredContent);
+        }
         
         messages.add(message);
         jsonFileUtil.writeArray(messages);
@@ -48,11 +56,19 @@ public class MessageService {
     
     public PageResult<Message> getMessageList(Integer page, Integer size, Boolean isAdmin) {
         List<Message> allMessages = jsonFileUtil.readArray(Message.class);
+        if (allMessages == null) {
+            allMessages = new ArrayList<>();
+        }
         
         List<Message> filteredMessages = allMessages.stream()
-                .filter(m -> !Boolean.TRUE.equals(m.getIsDeleted()))
+                .filter(m -> m != null && !Boolean.TRUE.equals(m.getIsDeleted()))
                 .filter(m -> isAdmin == null || isAdmin.equals(m.getIsAdmin()))
-                .sorted(Comparator.comparing(Message::getCreateTime).reversed())
+                .sorted((m1, m2) -> {
+                    if (m1.getCreateTime() == null && m2.getCreateTime() == null) return 0;
+                    if (m1.getCreateTime() == null) return 1;
+                    if (m2.getCreateTime() == null) return -1;
+                    return m2.getCreateTime().compareTo(m1.getCreateTime());
+                })
                 .collect(Collectors.toList());
         
         Long total = (long) filteredMessages.size();
@@ -62,16 +78,19 @@ public class MessageService {
         
         List<Message> pageMessages = start < filteredMessages.size() 
                 ? filteredMessages.subList(start, end) 
-                : List.of();
+                : new ArrayList<>();
         
         return new PageResult<>(pageMessages, total, page, size);
     }
     
     public boolean deleteMessage(Long id) {
         List<Message> messages = jsonFileUtil.readArray(Message.class);
+        if (messages == null) {
+            return false;
+        }
         
         for (Message message : messages) {
-            if (message.getId().equals(id)) {
+            if (message != null && id.equals(message.getId())) {
                 message.setIsDeleted(true);
                 jsonFileUtil.writeArray(messages);
                 return true;
@@ -82,17 +101,28 @@ public class MessageService {
     
     public Message getMessageById(Long id) {
         List<Message> messages = jsonFileUtil.readArray(Message.class);
+        if (messages == null) {
+            return null;
+        }
         return messages.stream()
-                .filter(m -> m.getId().equals(id) && !Boolean.TRUE.equals(m.getIsDeleted()))
+                .filter(m -> m != null && id.equals(m.getId()) && !Boolean.TRUE.equals(m.getIsDeleted()))
                 .findFirst()
                 .orElse(null);
     }
     
     public List<Message> getAllMessages() {
         List<Message> messages = jsonFileUtil.readArray(Message.class);
+        if (messages == null) {
+            return new ArrayList<>();
+        }
         return messages.stream()
-                .filter(m -> !Boolean.TRUE.equals(m.getIsDeleted()))
-                .sorted(Comparator.comparing(Message::getCreateTime).reversed())
+                .filter(m -> m != null && !Boolean.TRUE.equals(m.getIsDeleted()))
+                .sorted((m1, m2) -> {
+                    if (m1.getCreateTime() == null && m2.getCreateTime() == null) return 0;
+                    if (m1.getCreateTime() == null) return 1;
+                    if (m2.getCreateTime() == null) return -1;
+                    return m2.getCreateTime().compareTo(m1.getCreateTime());
+                })
                 .collect(Collectors.toList());
     }
 }

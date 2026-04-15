@@ -9,6 +9,7 @@
           id="username" 
           v-model="form.username" 
           placeholder="请输入您的用户名"
+          maxlength="50"
           required
         />
       </div>
@@ -20,6 +21,7 @@
           id="email" 
           v-model="form.email" 
           placeholder="请输入您的邮箱（选填）"
+          maxlength="100"
         />
       </div>
       
@@ -30,8 +32,10 @@
           v-model="form.content" 
           placeholder="请输入留言内容..."
           rows="4"
+          maxlength="500"
           required
         ></textarea>
+        <div class="char-count">{{ form.content.length }}/500</div>
       </div>
       
       <button type="submit" class="submit-btn">提交留言</button>
@@ -103,21 +107,30 @@ export default {
 .form-group textarea {
   width: 100%;
   padding: 12px 15px;
-  border: 2px solid #e0e0e0;
+  border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 14px;
-  transition: border-color 0.3s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .form-group textarea {
   resize: vertical;
   min-height: 100px;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
 }
 
 .submit-btn {
@@ -128,7 +141,7 @@ export default {
   border: none;
   border-radius: 8px;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
 }

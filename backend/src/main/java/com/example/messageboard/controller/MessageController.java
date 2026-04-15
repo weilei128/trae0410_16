@@ -4,6 +4,8 @@ import com.example.messageboard.common.PageResult;
 import com.example.messageboard.common.Result;
 import com.example.messageboard.entity.Message;
 import com.example.messageboard.service.MessageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,8 +13,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/messages")
-@CrossOrigin(origins = "*")
 public class MessageController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(MessageController.class);
     
     @Autowired
     private MessageService messageService;
@@ -27,9 +30,17 @@ public class MessageController {
                 return Result.error(400, "用户名不能为空");
             }
             
+            message.setUsername(message.getUsername().trim());
+            message.setContent(message.getContent().trim());
+            if (message.getEmail() != null) {
+                message.setEmail(message.getEmail().trim());
+            }
+            
             Message savedMessage = messageService.addMessage(message);
+            logger.info("Message added successfully: id={}, username={}", savedMessage.getId(), savedMessage.getUsername());
             return Result.success(savedMessage);
         } catch (Exception e) {
+            logger.error("Failed to add message", e);
             return Result.error("提交留言失败: " + e.getMessage());
         }
     }
@@ -40,9 +51,14 @@ public class MessageController {
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Boolean isAdmin) {
         try {
+            if (page < 1) page = 1;
+            if (size < 1) size = 10;
+            if (size > 100) size = 100;
+            
             PageResult<Message> result = messageService.getMessageList(page, size, isAdmin);
             return Result.success(result);
         } catch (Exception e) {
+            logger.error("Failed to get message list", e);
             return Result.error("获取留言列表失败: " + e.getMessage());
         }
     }
@@ -53,6 +69,7 @@ public class MessageController {
             List<Message> messages = messageService.getAllMessages();
             return Result.success(messages);
         } catch (Exception e) {
+            logger.error("Failed to get all messages", e);
             return Result.error("获取留言列表失败: " + e.getMessage());
         }
     }
@@ -66,6 +83,7 @@ public class MessageController {
             }
             return Result.success(message);
         } catch (Exception e) {
+            logger.error("Failed to get message by id: {}", id, e);
             return Result.error("获取留言失败: " + e.getMessage());
         }
     }
@@ -75,11 +93,13 @@ public class MessageController {
         try {
             boolean success = messageService.deleteMessage(id);
             if (success) {
+                logger.info("Message deleted successfully: id={}", id);
                 return Result.success();
             } else {
                 return Result.error(404, "留言不存在");
             }
         } catch (Exception e) {
+            logger.error("Failed to delete message: {}", id, e);
             return Result.error("删除留言失败: " + e.getMessage());
         }
     }

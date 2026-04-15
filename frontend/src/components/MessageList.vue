@@ -1,6 +1,6 @@
 <template>
   <div class="message-list">
-    <h2>留言列表</h2>
+    <h2>留言列表 <span v-if="total > 0" class="total-count">(共 {{ total }} 条)</span></h2>
     
     <div v-if="loading" class="loading">
       加载中...
@@ -10,34 +10,70 @@
       暂无留言
     </div>
     
-    <div v-else class="messages">
-      <div 
-        v-for="message in messages" 
-        :key="message.id" 
-        class="message-card"
-        :class="{ 'admin-message': message.isAdmin }"
-      >
-        <div class="message-header">
-          <div class="user-info">
-            <span class="username">{{ message.username }}</span>
-            <span v-if="message.isAdmin" class="admin-badge">管理员</span>
+    <div v-else>
+      <div class="messages">
+        <div 
+          v-for="message in messages" 
+          :key="message.id" 
+          class="message-card"
+          :class="{ 'admin-message': message.isAdmin }"
+        >
+          <div class="message-header">
+            <div class="user-info">
+              <span class="username">{{ message.username }}</span>
+              <span v-if="message.isAdmin" class="admin-badge">管理员</span>
+            </div>
+            <span class="time">{{ formatTime(message.createTime) }}</span>
           </div>
-          <span class="time">{{ formatTime(message.createTime) }}</span>
+          
+          <div class="message-content">
+            {{ message.content }}
+          </div>
+          
+          <div v-if="message.email" class="message-email">
+            邮箱: {{ message.email }}
+          </div>
+          
+          <div v-if="isAdmin" class="message-actions">
+            <button class="delete-btn" @click="$emit('delete', message.id)">
+              删除
+            </button>
+          </div>
         </div>
-        
-        <div class="message-content">
-          {{ message.content }}
-        </div>
-        
-        <div v-if="message.email" class="message-email">
-          邮箱: {{ message.email }}
-        </div>
-        
-        <div v-if="isAdmin" class="message-actions">
-          <button class="delete-btn" @click="$emit('delete', message.id)">
-            删除
-          </button>
-        </div>
+      </div>
+      
+      <div v-if="totalPages > 1" class="pagination">
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === 1"
+          @click="$emit('page-change', 1)"
+        >
+          首页
+        </button>
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === 1"
+          @click="$emit('page-change', currentPage - 1)"
+        >
+          上一页
+        </button>
+        <span class="page-info">
+          第 {{ currentPage }} / {{ totalPages }} 页
+        </span>
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === totalPages"
+          @click="$emit('page-change', currentPage + 1)"
+        >
+          下一页
+        </button>
+        <button 
+          class="page-btn" 
+          :disabled="currentPage === totalPages"
+          @click="$emit('page-change', totalPages)"
+        >
+          末页
+        </button>
       </div>
     </div>
   </div>
@@ -58,12 +94,46 @@ export default {
     isAdmin: {
       type: Boolean,
       default: false
+    },
+    total: {
+      type: Number,
+      default: 0
+    },
+    currentPage: {
+      type: Number,
+      default: 1
+    },
+    pageSize: {
+      type: Number,
+      default: 10
+    }
+  },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.total / this.pageSize) || 1
     }
   },
   methods: {
     formatTime(time) {
       if (!time) return ''
-      const date = new Date(time)
+      let date
+      if (typeof time === 'string') {
+        date = new Date(time)
+      } else if (Array.isArray(time) && time.length >= 6) {
+        date = new Date(
+          time[0], 
+          time[1] - 1, 
+          time[2], 
+          time[3] || 0, 
+          time[4] || 0, 
+          time[5] || 0
+        )
+      } else {
+        date = new Date(time)
+      }
+      if (isNaN(date.getTime())) {
+        return ''
+      }
       return date.toLocaleString('zh-CN', {
         year: 'numeric',
         month: '2-digit',
@@ -88,6 +158,12 @@ export default {
   color: #333;
   margin-bottom: 20px;
   font-size: 1.5rem;
+}
+
+.total-count {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: normal;
 }
 
 .loading,
@@ -151,40 +227,75 @@ export default {
 }
 
 .time {
-  color: #999;
+  color: #888;
   font-size: 13px;
 }
 
 .message-content {
   color: #444;
   line-height: 1.6;
-  margin-bottom: 10px;
   word-break: break-word;
 }
 
 .message-email {
-  color: #888;
+  margin-top: 10px;
   font-size: 13px;
-  margin-bottom: 10px;
+  color: #666;
 }
 
 .message-actions {
-  display: flex;
-  justify-content: flex-end;
+  margin-top: 12px;
+  text-align: right;
 }
 
 .delete-btn {
-  padding: 6px 16px;
-  background: #ff6b6b;
+  background: #ff4757;
   color: white;
   border: none;
-  border-radius: 5px;
+  padding: 6px 16px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   transition: background 0.2s;
 }
 
 .delete-btn:hover {
-  background: #ee5a5a;
+  background: #ff3344;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.page-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #5a6fd6;
+}
+
+.page-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.page-info {
+  color: #666;
+  font-size: 14px;
+  padding: 0 10px;
 }
 </style>
