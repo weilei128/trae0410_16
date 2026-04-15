@@ -1,0 +1,3 @@
+com\example\messageboard\exception\GlobalExceptionHandler.class
+com\example\messageboard\common\Result.class
+com\example\messageboard\util\JsonFileUtil.class

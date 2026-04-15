@@ -9,13 +9,16 @@
         </label>
       </div>
     </header>
-    
+
     <main class="main">
       <MessageForm @submit="handleSubmit" />
-      <MessageList 
-        :messages="messages" 
+      <MessageList
+        :messages="messages"
         :loading="loading"
         :is-admin="isAdminView"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total="total"
         @delete="handleDelete"
         @page-change="handlePageChange"
       />
@@ -40,7 +43,9 @@ export default {
       loading: false,
       isAdminView: false,
       currentPage: 1,
-      pageSize: 10
+      pageSize: 10,
+      totalPages: 1,
+      total: 0
     }
   },
   mounted() {
@@ -50,18 +55,30 @@ export default {
     async fetchMessages() {
       this.loading = true
       try {
-        const response = await api.get('/messages', {
-          params: {
-            page: this.currentPage,
-            size: this.pageSize,
-            isAdmin: this.isAdminView || undefined
-          }
-        })
-        if (response.code === 200) {
+        const params = {
+          page: this.currentPage,
+          size: this.pageSize
+        }
+        // 管理员视图只显示管理员留言
+        if (this.isAdminView) {
+          params.isAdmin = true
+        }
+
+        const response = await api.get('/messages', { params })
+        if (response.code === 200 && response.data) {
           this.messages = response.data.records || []
+          this.totalPages = response.data.totalPages || 1
+          this.total = response.data.total || 0
+        } else {
+          this.messages = []
+          this.totalPages = 1
+          this.total = 0
         }
       } catch (error) {
         console.error('获取留言失败:', error)
+        this.messages = []
+        this.totalPages = 1
+        this.total = 0
       } finally {
         this.loading = false
       }
@@ -75,9 +92,10 @@ export default {
         const response = await api.post('/messages', data)
         if (response.code === 200) {
           alert('留言提交成功！')
+          this.currentPage = 1
           this.fetchMessages()
         } else {
-          alert('提交失败: ' + response.message)
+          alert('提交失败: ' + (response.message || '未知错误'))
         }
       } catch (error) {
         alert('提交失败，请稍后重试')
@@ -93,7 +111,7 @@ export default {
           alert('删除成功')
           this.fetchMessages()
         } else {
-          alert('删除失败: ' + response.message)
+          alert('删除失败: ' + (response.message || '未知错误'))
         }
       } catch (error) {
         alert('删除失败，请稍后重试')

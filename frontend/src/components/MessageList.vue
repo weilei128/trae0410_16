@@ -1,19 +1,19 @@
 <template>
   <div class="message-list">
     <h2>留言列表</h2>
-    
+
     <div v-if="loading" class="loading">
       加载中...
     </div>
-    
+
     <div v-else-if="messages.length === 0" class="empty">
       暂无留言
     </div>
-    
+
     <div v-else class="messages">
-      <div 
-        v-for="message in messages" 
-        :key="message.id" 
+      <div
+        v-for="message in messages"
+        :key="message.id"
         class="message-card"
         :class="{ 'admin-message': message.isAdmin }"
       >
@@ -24,15 +24,15 @@
           </div>
           <span class="time">{{ formatTime(message.createTime) }}</span>
         </div>
-        
+
         <div class="message-content">
           {{ message.content }}
         </div>
-        
+
         <div v-if="message.email" class="message-email">
           邮箱: {{ message.email }}
         </div>
-        
+
         <div v-if="isAdmin" class="message-actions">
           <button class="delete-btn" @click="$emit('delete', message.id)">
             删除
@@ -40,12 +40,25 @@
         </div>
       </div>
     </div>
+
+    <Pagination
+      v-if="totalPages > 1"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total="total"
+      @page-change="$emit('page-change', $event)"
+    />
   </div>
 </template>
 
 <script>
+import Pagination from './Pagination.vue'
+
 export default {
   name: 'MessageList',
+  components: {
+    Pagination
+  },
   props: {
     messages: {
       type: Array,
@@ -58,8 +71,21 @@ export default {
     isAdmin: {
       type: Boolean,
       default: false
+    },
+    currentPage: {
+      type: Number,
+      default: 1
+    },
+    totalPages: {
+      type: Number,
+      default: 1
+    },
+    total: {
+      type: Number,
+      default: 0
     }
   },
+  emits: ['delete', 'page-change'],
   methods: {
     formatTime(time) {
       if (!time) return ''
