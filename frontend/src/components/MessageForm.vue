@@ -67,8 +67,13 @@ export default {
         email: this.form.email.trim(),
         content: this.form.content.trim()
       })
-      
-      this.form.content = ''
+    },
+    resetForm() {
+      this.form = {
+        username: '',
+        email: '',
+        content: ''
+      }
     }
   }
 }

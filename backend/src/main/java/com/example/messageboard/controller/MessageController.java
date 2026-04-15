@@ -4,6 +4,7 @@ import com.example.messageboard.common.PageResult;
 import com.example.messageboard.common.Result;
 import com.example.messageboard.entity.Message;
 import com.example.messageboard.service.MessageService;
+import com.example.messageboard.util.ValidationUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/messages")
-@CrossOrigin(origins = "*")
 public class MessageController {
     
     @Autowired
@@ -19,19 +19,18 @@ public class MessageController {
     
     @PostMapping
     public Result<Message> addMessage(@RequestBody Message message) {
-        try {
-            if (message.getContent() == null || message.getContent().trim().isEmpty()) {
-                return Result.error(400, "留言内容不能为空");
-            }
-            if (message.getUsername() == null || message.getUsername().trim().isEmpty()) {
-                return Result.error(400, "用户名不能为空");
-            }
-            
-            Message savedMessage = messageService.addMessage(message);
-            return Result.success(savedMessage);
-        } catch (Exception e) {
-            return Result.error("提交留言失败: " + e.getMessage());
+        if (!ValidationUtil.isValidUsername(message.getUsername())) {
+            return Result.error(400, "用户名为1-50个字符");
         }
+        if (!ValidationUtil.isValidContent(message.getContent())) {
+            return Result.error(400, "留言内容为1-2000个字符");
+        }
+        if (!ValidationUtil.isEmail(message.getEmail())) {
+            return Result.error(400, "邮箱格式不正确");
+        }
+        
+        Message savedMessage = messageService.addMessage(message);
+        return Result.success(savedMessage);
     }
     
     @GetMapping
@@ -48,9 +47,9 @@ public class MessageController {
     }
     
     @GetMapping("/all")
-    public Result<List<Message>> getAllMessages() {
+    public Result<List<Message>> getAllMessages(@RequestParam(required = false) Boolean isAdmin) {
         try {
-            List<Message> messages = messageService.getAllMessages();
+            List<Message> messages = messageService.getAllMessages(isAdmin);
             return Result.success(messages);
         } catch (Exception e) {
             return Result.error("获取留言列表失败: " + e.getMessage());

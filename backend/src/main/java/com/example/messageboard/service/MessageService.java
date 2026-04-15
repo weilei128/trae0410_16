@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,18 +52,25 @@ public class MessageService {
         
         List<Message> filteredMessages = allMessages.stream()
                 .filter(m -> !Boolean.TRUE.equals(m.getIsDeleted()))
-                .filter(m -> isAdmin == null || isAdmin.equals(m.getIsAdmin()))
+                .filter(m -> Boolean.TRUE.equals(isAdmin) || !Boolean.TRUE.equals(m.getIsAdmin()))
                 .sorted(Comparator.comparing(Message::getCreateTime).reversed())
                 .collect(Collectors.toList());
         
-        Long total = (long) filteredMessages.size();
+        long total = filteredMessages.size();
+        
+        if (page < 1) {
+            page = 1;
+        }
+        if (size < 1 || size > 100) {
+            size = 10;
+        }
         
         int start = (page - 1) * size;
         int end = Math.min(start + size, filteredMessages.size());
         
         List<Message> pageMessages = start < filteredMessages.size() 
                 ? filteredMessages.subList(start, end) 
-                : List.of();
+                : new ArrayList<>();
         
         return new PageResult<>(pageMessages, total, page, size);
     }
@@ -88,10 +96,11 @@ public class MessageService {
                 .orElse(null);
     }
     
-    public List<Message> getAllMessages() {
+    public List<Message> getAllMessages(Boolean isAdmin) {
         List<Message> messages = jsonFileUtil.readArray(Message.class);
         return messages.stream()
                 .filter(m -> !Boolean.TRUE.equals(m.getIsDeleted()))
+                .filter(m -> Boolean.TRUE.equals(isAdmin) || !Boolean.TRUE.equals(m.getIsAdmin()))
                 .sorted(Comparator.comparing(Message::getCreateTime).reversed())
                 .collect(Collectors.toList());
     }

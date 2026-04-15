@@ -6,6 +6,11 @@
       加载中...
     </div>
     
+    <div v-else-if="error" class="error">
+      {{ error }}
+      <button class="retry-btn" @click="$emit('retry')">重试</button>
+    </div>
+    
     <div v-else-if="messages.length === 0" class="empty">
       暂无留言
     </div>
@@ -40,6 +45,24 @@
         </div>
       </div>
     </div>
+    
+    <div v-if="totalPages > 1" class="pagination">
+      <button 
+        class="page-btn" 
+        :disabled="currentPage <= 1" 
+        @click="$emit('page-change', currentPage - 1)"
+      >
+        上一页
+      </button>
+      <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+      <button 
+        class="page-btn" 
+        :disabled="currentPage >= totalPages" 
+        @click="$emit('page-change', currentPage + 1)"
+      >
+        下一页
+      </button>
+    </div>
   </div>
 </template>
 
@@ -55,9 +78,21 @@ export default {
       type: Boolean,
       default: false
     },
+    error: {
+      type: String,
+      default: ''
+    },
     isAdmin: {
       type: Boolean,
       default: false
+    },
+    currentPage: {
+      type: Number,
+      default: 1
+    },
+    totalPages: {
+      type: Number,
+      default: 1
     }
   },
   methods: {
@@ -91,11 +126,27 @@ export default {
 }
 
 .loading,
-.empty {
+.empty,
+.error {
   text-align: center;
   padding: 40px;
   color: #999;
   font-size: 16px;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+.retry-btn {
+  margin-top: 15px;
+  padding: 8px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
 }
 
 .messages {
@@ -186,5 +237,40 @@ export default {
 
 .delete-btn:hover {
   background: #ee5a5a;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.page-btn {
+  padding: 8px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.page-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.page-btn:not(:disabled):hover {
+  background: #5a6fd6;
+}
+
+.page-info {
+  color: #666;
+  font-size: 14px;
 }
 </style>

@@ -1,9 +1,7 @@
 package com.example.messageboard.common;
 
-import lombok.Data;
 import java.util.List;
 
-@Data
 public class PageResult<T> {
     private List<T> records;
     private Long total;
@@ -17,5 +15,45 @@ public class PageResult<T> {
         this.page = page;
         this.size = size;
         this.totalPages = (int) Math.ceil((double) total / size);
+    }
+
+    public List<T> getRecords() {
+        return records;
+    }
+
+    public void setRecords(List<T> records) {
+        this.records = records;
+    }
+
+    public Long getTotal() {
+        return total;
+    }
+
+    public void setTotal(Long total) {
+        this.total = total;
+    }
+
+    public Integer getPage() {
+        return page;
+    }
+
+    public void setPage(Integer page) {
+        this.page = page;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
+    }
+
+    public Integer getTotalPages() {
+        return totalPages;
+    }
+
+    public void setTotalPages(Integer totalPages) {
+        this.totalPages = totalPages;
     }
 }

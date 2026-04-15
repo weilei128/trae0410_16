@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 10011
 
 spring:
   application:
@@ -8,9 +8,13 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  jackson:
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
 
 message:
   data:
-    path: ./data/messages.json
+    path: ./data_10011/messages.json
   sensitive:
-    words: 脏话,暴力,敏感词,广告,垃圾
+    words: 脏话,暴力,敏感词,广告,垃圾,赌博,色情,毒品,反动

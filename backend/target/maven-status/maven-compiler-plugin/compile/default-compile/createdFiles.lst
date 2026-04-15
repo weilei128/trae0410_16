@@ -1,0 +1,4 @@
+com\example\messageboard\common\Result.class
+com\example\messageboard\common\GlobalExceptionHandler.class
+com\example\messageboard\MessageBoardApplication.class
+com\example\messageboard\common\PageResult.class

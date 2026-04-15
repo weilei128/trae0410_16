@@ -11,13 +11,17 @@
     </header>
     
     <main class="main">
-      <MessageForm @submit="handleSubmit" />
+      <MessageForm @submit="handleSubmit" ref="messageFormRef" />
       <MessageList 
         :messages="messages" 
         :loading="loading"
+        :error="error"
         :is-admin="isAdminView"
+        :current-page="currentPage"
+        :total-pages="totalPages"
         @delete="handleDelete"
         @page-change="handlePageChange"
+        @retry="handleRetry"
       />
     </main>
   </div>
@@ -38,8 +42,10 @@ export default {
     return {
       messages: [],
       loading: false,
+      error: '',
       isAdminView: false,
       currentPage: 1,
+      totalPages: 1,
       pageSize: 10
     }
   },
@@ -49,6 +55,7 @@ export default {
   methods: {
     async fetchMessages() {
       this.loading = true
+      this.error = ''
       try {
         const response = await api.get('/messages', {
           params: {
@@ -59,9 +66,13 @@ export default {
         })
         if (response.code === 200) {
           this.messages = response.data.records || []
+          this.totalPages = response.data.totalPages || 1
+        } else {
+          this.error = response.message || '获取留言失败'
         }
       } catch (error) {
         console.error('获取留言失败:', error)
+        this.error = '网络错误，请稍后重试'
       } finally {
         this.loading = false
       }
@@ -75,6 +86,8 @@ export default {
         const response = await api.post('/messages', data)
         if (response.code === 200) {
           alert('留言提交成功！')
+          this.resetForm()
+          this.currentPage = 1
           this.fetchMessages()
         } else {
           alert('提交失败: ' + response.message)
@@ -101,11 +114,21 @@ export default {
     },
     handlePageChange(page) {
       this.currentPage = page
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      this.fetchMessages()
+    },
+    handleRetry() {
+      this.currentPage = 1
       this.fetchMessages()
     },
     toggleAdminView() {
       this.currentPage = 1
       this.fetchMessages()
+    },
+    resetForm() {
+      if (this.$refs.messageFormRef) {
+        this.$refs.messageFormRef.resetForm()
+      }
     }
   }
 }
